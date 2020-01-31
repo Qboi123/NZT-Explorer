@@ -1,0 +1,4 @@
+13:37:56: kan bestand 'file.png' niet openen (fout 2: het systeem kan het opgegeven bestand niet vinden.)
+13:37:56: Laden van afbeelding van bestand "'file.png" mislukt.
+13:37:56: kan bestand 'package.png' niet openen (fout 2: het systeem kan het opgegeven bestand niet vinden.)
+13:37:56: Laden van afbeelding van bestand "'package.png" mislukt.
