@@ -73,10 +73,10 @@ class Directory(object):
 
     def upper(self):
         s_path = self._split_path(self.path)
-        print(s_path)
+        # print(s_path)
         if len(s_path) >= 2:
             up = self.os.path.split(self.path)[0]
-            print(up)
+            # print(up)
             return Directory(up)
         return Directory(self.path)
 

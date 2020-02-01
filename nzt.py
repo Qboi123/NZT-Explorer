@@ -560,5 +560,5 @@ if __name__ == '__main__':
 
     nzt_file2 = NZTFile("Test.nzt", "r")
     nzt_file2.load()
-    print(repr(data_))
-    print(repr(nzt_file2.data))
+    # print(repr(data_))
+    # print(repr(nzt_file2.data))

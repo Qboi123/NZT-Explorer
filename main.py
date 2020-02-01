@@ -1,3 +1,5 @@
+import sys
+
 import wx
 import wx.lib
 import wx.richtext
@@ -123,7 +125,7 @@ class MainFrame(wx.Frame):
         # self.panel.SetSizer(self.sizer)
 
     def _delete_item(self, item, path, data):
-        print(data[path[0]])
+        # print(data[path[0]])
         if len(path) > 1:
             return self._delete_item(item, path[1:], data[path[0]])
         elif len(path) == 1:
@@ -136,18 +138,18 @@ class MainFrame(wx.Frame):
         else:
             path: list = self.treeCtrl.GetItemData(selected_item)["path"]
 
-        print(path)
+        # print(path)
 
         if len(path) == 0:
             return
 
         if self.get_type2(path[:-1], self.data) in [dict, list] and len(path) > 0:
-            print(self.data[path[0]])
+            # print(self.data[path[0]])
             if len(path) > 1:
                 self._delete_item(selected_item, path[1:], self.data[path[0]])
             elif len(path) == 1:
                 del self.data[path[0]]
-        print("DATA:", self.data)
+        # print("DATA:", self.data)
         self._refresh_tree_item(
             self.treeCtrl.GetItemParent(selected_item),
             self.get_value(path[:-1], self.data), path[:-1]
@@ -303,20 +305,20 @@ class MainFrame(wx.Frame):
         self.path = None
 
     def exit_command(self, evt: wx.CommandEvent):
-        nzt_file = NZTFile(self.path, "r")
-        nzt_file.load()
-        if nzt_file.data != self.data:
-            with wx.MessageDialog(self, "Are you sure you want to quit?", "Question",
-                                  wx.YES | wx.NO | wx.NO_DEFAULT | wx.CENTRE | wx.ICON_QUESTION) as messageDialog:
-                messageDialog: wx.MessageDialog
-                choice = messageDialog.ShowModal()
-                if choice == wx.ID_NO:
-                    nzt_file.close()
-                    return
+        if self.path:
+            nzt_file = NZTFile(self.path, "r")
+            nzt_file.load()
+            if nzt_file.data != self.data:
+                with wx.MessageDialog(self, "Are you sure you want to quit?", "Question",
+                                      wx.YES | wx.NO | wx.NO_DEFAULT | wx.CENTRE | wx.ICON_QUESTION) as messageDialog:
+                    messageDialog: wx.MessageDialog
+                    choice = messageDialog.ShowModal()
+                    if choice == wx.ID_NO:
+                        nzt_file.close()
+                        return
 
-        nzt_file.close()
-
-        exit(0)
+            nzt_file.close()
+        sys.exit(0)
 
     def save_command(self, evt: wx.CommandEvent):
         if self.path:
@@ -612,7 +614,7 @@ class MainFrame(wx.Frame):
 
 class Main(wx.App):
     def __init__(self):
-        super().__init__(False)
+        super().__init__(True)
 
         self.mainFrame = MainFrame()
         self.mainFrame.Show()
