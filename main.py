@@ -621,4 +621,6 @@ class Main(wx.App):
 
 
 if __name__ == '__main__':
+    import os
+    os.chdir(os.path.abspath(os.getcwd()))
     Main().MainLoop()
