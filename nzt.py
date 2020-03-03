@@ -139,12 +139,12 @@ class ZipFormatFile(File):
                             append_value1 = self.split_path(item.filename[:-1])[-1]
                         else:
                             append_value1 = self.split_path(item.filename)[-2]
-                        if append_value1 not in list_+[""]:
+                        if append_value1 not in list_ + [""]:
                             list_.append(append_value1)
             else:  # if self.os.path.join(*self.os.path.split(item.filename)[:-1]) == fp:
                 if item.is_dir():
                     append_value2 = self.os.path.split(item.filename)[-1]
-                    if append_value2 not in list_+[""]:
+                    if append_value2 not in list_ + [""]:
                         list_.append(append_value2)
         return list_
 
@@ -180,6 +180,7 @@ class ZippedFile(object):
 
     def __repr__(self):
         return f"<ZippedFile '{self.path}'>"
+
     #
     # def __gt__(self, other):
     #     if type(other) == ZippedDirectory:
@@ -229,7 +230,7 @@ class ZippedFile(object):
     #         other: ZippedFile
     #         return self.fileName != other.fileName
 
-    
+
 # noinspection PyProtectedMember
 class ZippedDirectory(object):
     def __init__(self, zip_file: ZipFormatFile, path, pwd=None):
@@ -562,3 +563,5 @@ if __name__ == '__main__':
     nzt_file2.load()
     # print(repr(data_))
     # print(repr(nzt_file2.data))
+
+    print("https://www.google.com")
