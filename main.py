@@ -3,10 +3,13 @@ import sys
 import wx
 import wx.lib
 import wx.richtext
+import wx.dataview
+from wx._dataview import TLI_LAST
+from wx.html import HtmlWindow
 
 from nzt import NZTFile
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 
 # noinspection PyUnusedLocal
@@ -29,6 +32,8 @@ class MainFrame(wx.Frame):
             wx.Image("icons/package.png", wx.BITMAP_TYPE_PNG).ConvertToBitmap())
         self.listImage = image_list.Add(
             wx.Image("icons/list.png", wx.BITMAP_TYPE_PNG).ConvertToBitmap())
+        self.dictImage = image_list.Add(
+            wx.Image("icons/dict.png", wx.BITMAP_TYPE_PNG).ConvertToBitmap())
 
         self.valueImages = {
             str: image_list.Add(wx.Image("icons/files/string.png", wx.BITMAP_TYPE_PNG).ConvertToBitmap()),
@@ -44,15 +49,24 @@ class MainFrame(wx.Frame):
 
         # Controls
         # self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.treeCtrl = wx.TreeCtrl(self.panel, wx.ID_ANY, )
-        self.treeCtrl.AddRoot("<None>", self.packageImage)
-        self.treeCtrl.Bind(wx.EVT_TREE_ITEM_ACTIVATED, self.open_item)
+        self.treeCtrl = wx.dataview.TreeListCtrl(self.panel, wx.ID_ANY, )
+        self.nameColumn = self.treeCtrl.AppendColumn("Name")
+        self.valueColumn = self.treeCtrl.AppendColumn("Value")
+        self.treeCtrl.Bind(wx.dataview.EVT_TREELIST_ITEM_ACTIVATED, self.open_item)
 
         self.treeCtrl.AssignImageList(image_list)
-
-        self.panel.Bind(wx.EVT_SIZE, self.resize_tree)
+        # self.rootItem = self.treeCtrl.AppendItem(self.treeCtrl.GetRootItem(), "")
+        # self.treeCtrl.SetItemText(self.rootItem, self.nameColumn, "<None>")
+        # self.treeCtrl.SetItemText(self.rootItem, self.valueColumn, "<None>")
 
         # self.sizer.Add(self.treeCtrl)
+
+        root_item = self.treeCtrl.GetRootItem()
+        item: wx.dataview.TreeListItem = self.treeCtrl.AppendItem(root_item, "")
+        self.treeCtrl.SetItemText(item, self.nameColumn, f"<Not Opened Yet>")
+        self.treeCtrl.SetItemText(item, self.valueColumn, f"")
+        self.rootItem = item
+        self.panel.Bind(wx.EVT_SIZE, self.resize_tree)
 
         # Menu Bar
         self.menuBar = wx.MenuBar(style=0)
@@ -132,7 +146,7 @@ class MainFrame(wx.Frame):
             del data[path[0]]
 
     def delete_item(self, evt: wx.CommandEvent):
-        selected_item: wx.TreeItemId = self.treeCtrl.GetFocusedItem()
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
         if selected_item == self.treeCtrl.GetRootItem():
             path = []
         else:
@@ -157,23 +171,29 @@ class MainFrame(wx.Frame):
 
     def about(self, evt: wx.MenuEvent):
         with wx.Dialog(self) as dialog:
+            def on_link_clicked(evt: wx.html.HtmlLinkEvent):
+                print(f"CLicked on URL: {evt.GetLinkInfo().GetHref()}")
+                os.startfile(evt.GetLinkInfo().GetHref())
+
             dialog: wx.Dialog
+
+            richtext = HtmlWindow(dialog, size=(150, 150))
+            richtext.Bind(wx.html.EVT_HTML_LINK_CLICKED, on_link_clicked)
+            richtext.SetPage(f"<center style='font-family: \"Malgun Gothic Semilight\";font-size: 26'>"
+                             f"NZT Explorer"
+                             f"</center>"
+                             f"<center style='font-family: \"Malgun Gothic Semilight\";font-size: 12'>"
+                             f"<br><br>Version: {VERSION}"
+                             f"</center>"
+                             f"<center style='font-family: \"Malgun Gothic Semilight\";font-size: 12'>"
+                             f"<br>Website: "
+                             f"<a href='https://quintenjungblut.wixsite.com/qplaysoftware'>"
+                             f"https://quintenjungblut.wixsite.com/qplaysoftware"
+                             f"</a>")
 
             main_button = wx.Button(self, id=wx.ID_OK, label="OK")
             dialog.AddMainButtonId(wx.ID_OK)
 
-            richtext = wx.richtext.RichTextCtrl(dialog)
-            richtext.AppendText(f"<center style='font-family: \"Malgun Gothic Semilight\";font-size: 26'>"
-                                f"NZT Explorer"
-                                f"</center>"
-                                f"<center style='font-family: \"Malgun Gothic Semilight\";font-size: 12'>"
-                                f"<br><br>Version: {VERSION}"
-                                f"</center>"
-                                f"<center style='font-family: \"Malgun Gothic Semilight\";font-size: 12'>"
-                                f"<br>Website: "
-                                f"<a href='https://quintenjungblut.wixsite.com/qplaysoftware'>"
-                                f"'https://quintenjungblut.wixsite.com/qplaysoftware'"
-                                f"</a>")
             dialog.ShowModal()
 
     def new_float(self, evt: wx.CommandEvent):
@@ -197,7 +217,7 @@ class MainFrame(wx.Frame):
 
             value = value_
 
-        selected_item: wx.TreeItemId = self.treeCtrl.GetFocusedItem()
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
         if selected_item == self.treeCtrl.GetRootItem():
             path = []
         else:
@@ -221,7 +241,7 @@ class MainFrame(wx.Frame):
             else:
                 return
 
-        selected_item: wx.TreeItemId = self.treeCtrl.GetFocusedItem()
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
         if selected_item == self.treeCtrl.GetRootItem():
             path = []
         else:
@@ -239,7 +259,7 @@ class MainFrame(wx.Frame):
             dialog.ShowModal()
             value: str = dialog.GetValue()
 
-        selected_item: wx.TreeItemId = self.treeCtrl.GetFocusedItem()
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
         if selected_item == self.treeCtrl.GetRootItem():
             path = []
         else:
@@ -258,7 +278,7 @@ class MainFrame(wx.Frame):
             dialog.ShowModal()
             value: int = dialog.GetValue()
 
-        selected_item: wx.TreeItemId = self.treeCtrl.GetFocusedItem()
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
         if selected_item == self.treeCtrl.GetRootItem():
             path = []
         else:
@@ -273,7 +293,7 @@ class MainFrame(wx.Frame):
 
         value = []
 
-        selected_item: wx.TreeItemId = self.treeCtrl.GetFocusedItem()
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
         if selected_item == self.treeCtrl.GetRootItem():
             path = []
         else:
@@ -288,7 +308,7 @@ class MainFrame(wx.Frame):
 
         value = {}
 
-        selected_item: wx.TreeItemId = self.treeCtrl.GetFocusedItem()
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()[0]
         if selected_item == self.treeCtrl.GetRootItem():
             path = []
         else:
@@ -299,7 +319,8 @@ class MainFrame(wx.Frame):
         self.new()
 
     def new(self):
-        self.treeCtrl.DeleteChildren(self.treeCtrl.GetRootItem())
+        while self.treeCtrl.GetFirstChild(self.rootItem):
+            self.treeCtrl.DeleteItem(self.treeCtrl.GetFirstChild(self.rootItem))
         self.treeCtrl.SetItemText(self.treeCtrl.GetRootItem(), "<None>")
         self.data = {}
         self.path = None
@@ -330,12 +351,12 @@ class MainFrame(wx.Frame):
         self.saveas_command(evt)
 
     def saveas_command(self, evt: wx.CommandEvent):
-        with wx.FileDialog(self, "Select NZT File",  wildcard="NZT files (*.nzt)|*.nzt",
+        with wx.FileDialog(self, "Select NZT File", wildcard="NZT files (*.nzt)|*.nzt",
                            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
             fileDialog: wx.FileDialog
             fileDialog.ShowModal()
             path = fileDialog.GetPath()
-        
+
         nzt_file = NZTFile(path, "w")
         nzt_file.data = self.data
         nzt_file.save()
@@ -354,7 +375,7 @@ class MainFrame(wx.Frame):
 
         self.new()
 
-        with wx.FileDialog(self, "Select NZT File",  wildcard="NZT files (*.nzt)|*.nzt",
+        with wx.FileDialog(self, "Select NZT File", wildcard="NZT files (*.nzt)|*.nzt",
                            style=wx.FD_DEFAULT_STYLE) as fileDialog:
             fileDialog: wx.FileDialog
             fileDialog.ShowModal()
@@ -372,26 +393,31 @@ class MainFrame(wx.Frame):
             self.refresh_tree()
 
     def refresh_tree(self):
-        root_item: wx.TreeItemId = self.treeCtrl.GetRootItem()
-        self.treeCtrl.SetItemImage(root_item, self.packageImage)
-        self.treeCtrl.SetItemText(root_item, self.path)
+        print(self.rootItem)
+        self.treeCtrl.SetItemImage(self.rootItem, self.packageImage)
+        self.treeCtrl.SetItemText(self.rootItem, self.nameColumn, os.path.split(self.path)[-1])
+        root_item = self.rootItem
         # print(self.data)
 
         for key, value in self.data.items():
             # print(f"{key}: {value}")
-            item: wx.TreeItemId = self.treeCtrl.AppendItem(root_item, f"{key}: {value}",
-                                                           data={"path": [key],
-                                                                 "name": key,
-                                                                 "value": value,
-                                                                 "index": None})
+            item: wx.dataview.TreeListItem = self.treeCtrl.AppendItem(root_item, "",
+                                                                      data={"path": [key],
+                                                                            "name": key,
+                                                                            "value": value,
+                                                                            "index": None})
+            print(item)
             item.path = [key]
             item.name = key
             item.value = value
             item.index = None
+            self.treeCtrl.SetItemText(item, self.nameColumn, f"{repr(key)}")
+            self.treeCtrl.SetItemText(item, self.valueColumn, f"{repr(value)}")
             if type(value) in (dict, list, tuple):
                 item.type = type(value)
-                self.treeCtrl.SetItemText(item, f"{key}")
-                self.treeCtrl.SetItemImage(item, self.packageImage if type(value) == dict else self.listImage)
+                self.treeCtrl.SetItemText(item, self.nameColumn, f"{key}")
+                self.treeCtrl.SetItemText(item, self.valueColumn, f"")
+                self.treeCtrl.SetItemImage(item, self.dictImage if type(value) == dict else self.listImage)
                 self._refresh_tree_item(item, value, item.path)
             elif type(value) in (int, float, str, bool, bytes, bytearray, type):
                 item.type = type(value)
@@ -410,10 +436,11 @@ class MainFrame(wx.Frame):
                 )
 
     def _refresh_tree_item(self, tree_item, data, path):
-        self.treeCtrl.DeleteChildren(tree_item)
+        while self.treeCtrl.GetFirstChild(tree_item):
+            self.treeCtrl.DeleteItem(self.treeCtrl.GetFirstChild(tree_item))
         if type(data) == dict:
             for key, value in data.items():
-                item: wx.TreeItemId = self.treeCtrl.AppendItem(tree_item, f"{key}: {value}",
+                item: wx.TreeItemId = self.treeCtrl.AppendItem(tree_item, "",
                                                                data={"path": path + [key],
                                                                      "name": key,
                                                                      "value": value,
@@ -422,11 +449,13 @@ class MainFrame(wx.Frame):
                 item.name = key
                 item.value = value
                 item.index = None
-
+                self.treeCtrl.SetItemText(item, self.nameColumn, f"{repr(key)}")
+                self.treeCtrl.SetItemText(item, self.valueColumn, f"{repr(value)}")
                 if type(value) in (dict, list, tuple):
                     item.type = type(value)
-                    self.treeCtrl.SetItemText(item, f"{key}")
-                    self.treeCtrl.SetItemImage(item, self.packageImage if type(value) == dict else self.listImage)
+                    self.treeCtrl.SetItemText(item, self.nameColumn, f"{key}")
+                    self.treeCtrl.SetItemText(item, self.valueColumn, f"")
+                    self.treeCtrl.SetItemImage(item, self.dictImage if type(value) == dict else self.listImage)
                     self._refresh_tree_item(item, value, item.path)
                 elif type(value) in (int, float, str, bool, bytes, bytearray, type):
                     item.type = type(value)
@@ -445,7 +474,7 @@ class MainFrame(wx.Frame):
                     )
         elif type(data) in [list, tuple]:
             for i in range(len(data)):
-                item: wx.TreeItemId = self.treeCtrl.AppendItem(tree_item, f"{i}: {data[i]}",
+                item: wx.TreeItemId = self.treeCtrl.AppendItem(tree_item, "",  # f"{repr(i)}: {repr(data[i])}",
                                                                data={"path": path + [i],
                                                                      "name": None,
                                                                      "value": data[i], "index": i})
@@ -455,10 +484,14 @@ class MainFrame(wx.Frame):
                 item.value = data[i]
                 item.index = i
 
+                self.treeCtrl.SetItemText(item, self.nameColumn, f"{repr(i)}")
+                self.treeCtrl.SetItemText(item, self.valueColumn, f"{repr(data[i])}")
+
                 if type(data[i]) in (dict, list, tuple):
                     item.type = type(data[i])
-                    self.treeCtrl.SetItemText(item, f"{i}")
-                    self.treeCtrl.SetItemImage(item, self.packageImage if type(data[i]) == dict else self.listImage)
+                    self.treeCtrl.SetItemText(item, self.nameColumn, f"{i}")
+                    self.treeCtrl.SetItemText(item, self.valueColumn, f"")
+                    self.treeCtrl.SetItemImage(item, self.dictImage if type(data[i]) == dict else self.listImage)
                     self._refresh_tree_item(item, data[i], item.path)
                 elif type(data[i]) in (int, float, str, bool, bytes, bytearray, type):
                     item.type = type(data[i])
@@ -582,9 +615,11 @@ class MainFrame(wx.Frame):
                 return
 
             if data["index"]:
-                self.treeCtrl.SetItemText(item, f"{data['value']}")
+                self.treeCtrl.SetItemText(item, self.nameColumn, f"{repr(data['index'])}")
+                self.treeCtrl.SetItemText(item, self.valueColumn, f"{repr(data['value'])}")
             else:
-                self.treeCtrl.SetItemText(item, f"{data['name']}: {data['value']}")
+                self.treeCtrl.SetItemText(item, self.nameColumn, f"{repr(data['name'])}")
+                self.treeCtrl.SetItemText(item, self.valueColumn, f"{repr(data['value'])}")
 
             self.set_value(path, self.data, data['value'])
             # print("Setted Value", data['value'])
@@ -614,7 +649,7 @@ class MainFrame(wx.Frame):
 
 class Main(wx.App):
     def __init__(self):
-        super().__init__(True)
+        super().__init__(False)
 
         self.mainFrame = MainFrame()
         self.mainFrame.Show()
@@ -622,5 +657,6 @@ class Main(wx.App):
 
 if __name__ == '__main__':
     import os
+
     os.chdir(os.path.abspath(os.getcwd()))
     Main().MainLoop()

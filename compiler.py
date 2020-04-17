@@ -4,7 +4,7 @@ import shutil
 import traceback
 
 import sys
-from typing import MutableSequence, Tuple
+from typing import MutableSequence, Tuple, Optional
 
 
 class CompilerError(BaseException):
@@ -13,7 +13,7 @@ class CompilerError(BaseException):
 
 # noinspection PyUnusedClass
 class Compiler(object):
-    def __init__(self, exclude: MutableSequence[str], icon: str, main_folder: str, main_file: str,
+    def __init__(self, exclude: MutableSequence[str], icon: Optional[str], main_folder: str, main_file: str,
                  hidden_imports: MutableSequence[str], dlls: MutableSequence[str] = None, one_file=False,
                  hide_console=False, fix_recursion_limit=True, upx_dir: str = None, log_level: str = "INFO",
                  app_name: str = "", extra_binaries: MutableSequence[Tuple[str, str]] = None,
