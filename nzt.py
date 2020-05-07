@@ -1,5 +1,5 @@
 import os
-import pickle
+import dill as pickle
 import zipfile
 from typing import Optional, Union
 
@@ -554,7 +554,7 @@ if __name__ == '__main__':
     data_ = {"string": "Hallo", "int": 39, "float": 43.6, "boolean": True, "object": print,
              "dict": {"Hoi": 3, "Hallo": False,
                       "FolderLOL": {"File1": "Hoi", "Number": 584.5, "Dictionary": {"Score": 48376, "Lives": 6}}},
-             "list": [485.4, False, 95, "Hoi", 40]}
+             "list": [485.4, False, 95, "Hoi", 40], "lambda": lambda name: print(f"Hello {name}")}
     nzt_file = NZTFile("Test.nzt", "w")
     nzt_file.data = data_
     nzt_file.save()

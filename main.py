@@ -109,14 +109,17 @@ class MainFrame(wx.Frame):
         self.nodeValueBool = wx.MenuItem(self.nodeValueMenu, wx.ID_ANY, "New &Boolean Value")
         self.nodeValueInt = wx.MenuItem(self.nodeValueMenu, wx.ID_ANY, "New &Integer Value")
         self.nodeValueFloat = wx.MenuItem(self.nodeValueMenu, wx.ID_ANY, "New &Float Value")
+        # self.nodeValueObject = wx.MenuItem(self.nodeValueMenu, wx.ID_ANY, "New &Object Value")
         self.nodeValueMenu.Bind(wx.EVT_MENU, self.new_str, self.nodeValueStr)
         self.nodeValueMenu.Bind(wx.EVT_MENU, self.new_bool, self.nodeValueBool)
         self.nodeValueMenu.Bind(wx.EVT_MENU, self.new_int, self.nodeValueInt)
         self.nodeValueMenu.Bind(wx.EVT_MENU, self.new_float, self.nodeValueFloat)
+        # self.nodeValueMenu.Bind(wx.EVT_MENU, self.new_object, self.nodeValueObject)
         self.nodeValueMenu.Append(self.nodeValueStr)
         self.nodeValueMenu.Append(self.nodeValueBool)
         self.nodeValueMenu.Append(self.nodeValueInt)
         self.nodeValueMenu.Append(self.nodeValueFloat)
+        # self.nodeValueMenu.Append(self.nodeValueObject)
         self.nodeMenu.AppendSubMenu(self.nodeValueMenu, "New &Value")
 
         self.nodeDeleteItem = wx.MenuItem(self.nodeMenu, wx.ID_ANY, "&Delete Value or Package")
@@ -266,6 +269,61 @@ class MainFrame(wx.Frame):
             path: list = self.treeCtrl.GetItemData(selected_item)["path"]
         self.new_value(path, selected_item, name, value)
 
+    def new_object(self, evt: wx.CommandEvent):
+        import wx
+
+        app = wx.App()
+
+        with wx.MessageDialog(self, "WARNING!", "Are you sure you want to create a new object?\n"
+                                                "Don't use this feature unless you know what you are doing.", wx.YES_NO | wx.ICON_WARNING) as dialog:
+            result = dialog.ShowModal()
+
+        if result == wx.ID_YES:
+            with wx.TextEntryDialog(self, "Name for the new string:", "New String") as dialog:
+                dialog: wx.TextEntryDialog
+                dialog.ShowModal()
+                name: str = dialog.GetValue()
+
+            with wx.TextEntryDialog(self, "Code for the new object", "New String") as dialog:
+                dialog: wx.NumberEntryDialog
+                dialog.ShowModal()
+                code: str = dialog.GetValue()
+
+            with wx.TextEntryDialog(self, "Filename for the new object", "New String") as dialog:
+                dialog: wx.NumberEntryDialog
+                dialog.ShowModal()
+                file: str = dialog.GetValue()
+
+            glob = {}
+            loc = {}
+
+            try:
+                exec(compile(code, file, "exec"), glob, loc)
+            except Exception as e:
+                import traceback
+
+                with wx.MessageDialog(self, "Error", traceback.format_exception(e.__class__, e, e.__traceback__),
+                                      wx.OK | wx.CENTRE | wx.ICON_ERROR) as dialog:
+                    dialog.ShowModal()
+
+            with wx.SingleChoiceDialog(self, "Choose an local object to create", "Boolean", loc.keys()) as dialog:
+                dialog: wx.SingleChoiceDialog
+                dialog.ShowModal()
+                choosen = dialog.GetStringSelection()
+
+                if choosen:
+                    value = loc[choosen]
+                else:
+                    return
+
+            selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
+            if selected_item == self.treeCtrl.GetRootItem():
+                path = []
+            else:
+                path: list = self.treeCtrl.GetItemData(selected_item)["path"]
+            self.new_value(path, selected_item, name, value)
+        # evt.Destroy()
+
     def new_int(self, evt: wx.CommandEvent):
         with wx.TextEntryDialog(self, "Name for the new integer:", "New Integer") as dialog:
             dialog: wx.TextEntryDialog
@@ -308,8 +366,8 @@ class MainFrame(wx.Frame):
 
         value = {}
 
-        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()[0]
-        if selected_item == self.treeCtrl.GetRootItem():
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
+        if selected_item == self.rootItem:
             path = []
         else:
             path: list = self.treeCtrl.GetItemData(selected_item)["path"]
@@ -657,6 +715,10 @@ class Main(wx.App):
 
 if __name__ == '__main__':
     import os
+
+    import sys
+    if hasattr(sys, '_MEIPASS'):
+        os.chdir(sys._MEIPASS)
 
     os.chdir(os.path.abspath(os.getcwd()))
     Main().MainLoop()

@@ -15,8 +15,9 @@ if __name__ == '__main__':
         icon=None, main_folder=os.getcwd(), main_file="main.py",
         hidden_imports=["wx", "wx._core", "wx.core", "wx._adv", "wx._media", "wx._msw", "wx._propgrid", "wx._ribbon",
                         "wx._aui", "wx._dataview", "wx._glcanvas", "wx._grid", "wx._html", "wx._html2", "wx._richtext",
-                        "wx._stc", "wx._xml", "wx._xrc", "_sys", "sys"],
-        log_level="INFO", app_name="NZT-Explorer", clean=True, hide_console=True, one_file=False,
+                        "wx._stc", "wx._xml", "wx._xrc", "_sys", "sys", "dill", "cdill", "cdill._dill",
+                        "pkg_resources.py2_warn"],
+        log_level="INFO", app_name="NZT-Explorer", clean=True, hide_console=True, one_file=True,
         dlls=[])
     compiler.reindex()
 
