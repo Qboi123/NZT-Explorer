@@ -1,4 +1,5 @@
 import sys
+from pickle import PicklingError
 
 import wx
 import wx.lib
@@ -10,6 +11,29 @@ from wx.html import HtmlWindow
 from nzt import NZTFile
 
 VERSION = "1.1.0"
+import wx
+
+
+class ResizableTextEntryDialog(wx.Dialog):
+    def __init__(self, parent, title, caption):
+        style = wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER
+        super(ResizableTextEntryDialog, self).__init__(parent, -1, title, style=style)
+        text = wx.StaticText(self, -1, caption)
+        input = wx.TextCtrl(self, -1, style=wx.TE_MULTILINE)
+        input.SetInitialSize((400, 300))
+        buttons = self.CreateButtonSizer(wx.OK|wx.CANCEL)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(text, 0, wx.ALL, 5)
+        sizer.Add(input, 1, wx.EXPAND|wx.ALL, 5)
+        sizer.Add(buttons, 0, wx.EXPAND|wx.ALL, 5)
+        self.SetSizerAndFit(sizer)
+        self.input = input
+
+    def SetValue(self, value):
+        self.input.SetValue(value)
+
+    def GetValue(self):
+        return self.input.GetValue()
 
 
 # noinspection PyUnusedLocal
@@ -109,17 +133,17 @@ class MainFrame(wx.Frame):
         self.nodeValueBool = wx.MenuItem(self.nodeValueMenu, wx.ID_ANY, "New &Boolean Value")
         self.nodeValueInt = wx.MenuItem(self.nodeValueMenu, wx.ID_ANY, "New &Integer Value")
         self.nodeValueFloat = wx.MenuItem(self.nodeValueMenu, wx.ID_ANY, "New &Float Value")
-        # self.nodeValueObject = wx.MenuItem(self.nodeValueMenu, wx.ID_ANY, "New &Object Value")
+        self.nodeValueObject = wx.MenuItem(self.nodeValueMenu, wx.ID_ANY, "New &Object Value")
         self.nodeValueMenu.Bind(wx.EVT_MENU, self.new_str, self.nodeValueStr)
         self.nodeValueMenu.Bind(wx.EVT_MENU, self.new_bool, self.nodeValueBool)
         self.nodeValueMenu.Bind(wx.EVT_MENU, self.new_int, self.nodeValueInt)
         self.nodeValueMenu.Bind(wx.EVT_MENU, self.new_float, self.nodeValueFloat)
-        # self.nodeValueMenu.Bind(wx.EVT_MENU, self.new_object, self.nodeValueObject)
+        self.nodeValueMenu.Bind(wx.EVT_MENU, self.new_object, self.nodeValueObject)
         self.nodeValueMenu.Append(self.nodeValueStr)
         self.nodeValueMenu.Append(self.nodeValueBool)
         self.nodeValueMenu.Append(self.nodeValueInt)
         self.nodeValueMenu.Append(self.nodeValueFloat)
-        # self.nodeValueMenu.Append(self.nodeValueObject)
+        self.nodeValueMenu.Append(self.nodeValueObject)
         self.nodeMenu.AppendSubMenu(self.nodeValueMenu, "New &Value")
 
         self.nodeDeleteItem = wx.MenuItem(self.nodeMenu, wx.ID_ANY, "&Delete Value or Package")
@@ -142,6 +166,10 @@ class MainFrame(wx.Frame):
         # self.panel.SetSizer(self.sizer)
 
     def _delete_item(self, item, path, data):
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
+        if not selected_item.IsOk():
+            return
+
         # print(data[path[0]])
         if len(path) > 1:
             return self._delete_item(item, path[1:], data[path[0]])
@@ -150,9 +178,15 @@ class MainFrame(wx.Frame):
 
     def delete_item(self, evt: wx.CommandEvent):
         selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
-        if selected_item == self.treeCtrl.GetRootItem():
+        if not selected_item.IsOk():
+            return
+
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
+        if selected_item == self.rootItem:
             path = []
         else:
+            print(selected_item)
+            print(selected_item.IsOk())
             path: list = self.treeCtrl.GetItemData(selected_item)["path"]
 
         # print(path)
@@ -200,6 +234,10 @@ class MainFrame(wx.Frame):
             dialog.ShowModal()
 
     def new_float(self, evt: wx.CommandEvent):
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
+        if not selected_item.IsOk():
+            return
+
         with wx.TextEntryDialog(self, "Name for the new float:", "New Float") as dialog:
             dialog: wx.TextEntryDialog
             dialog.ShowModal()
@@ -228,6 +266,10 @@ class MainFrame(wx.Frame):
         self.new_value(path, selected_item, name, value)
 
     def new_bool(self, evt: wx.CommandEvent):
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
+        if not selected_item.IsOk():
+            return
+
         with wx.TextEntryDialog(self, "Name for the new string:", "New Integer") as dialog:
             dialog: wx.TextEntryDialog
             dialog.ShowModal()
@@ -252,6 +294,10 @@ class MainFrame(wx.Frame):
         self.new_value(path, selected_item, name, value)
 
     def new_str(self, evt: wx.CommandEvent):
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
+        if not selected_item.IsOk():
+            return
+
         with wx.TextEntryDialog(self, "Name for the new string:", "New String") as dialog:
             dialog: wx.TextEntryDialog
             dialog.ShowModal()
@@ -270,26 +316,31 @@ class MainFrame(wx.Frame):
         self.new_value(path, selected_item, name, value)
 
     def new_object(self, evt: wx.CommandEvent):
-        import wx
+        # import wx
+        #
+        # app = wx.App()
 
-        app = wx.App()
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
+        if not selected_item.IsOk():
+            return
 
-        with wx.MessageDialog(self, "WARNING!", "Are you sure you want to create a new object?\n"
-                                                "Don't use this feature unless you know what you are doing.", wx.YES_NO | wx.ICON_WARNING) as dialog:
+        with wx.MessageDialog(self, "Are you sure you want to create a new object?\n"
+                                    "Don't use this feature unless you know what you are doing.",
+                              "WARNING!", wx.YES_NO | wx.ICON_WARNING) as dialog:
             result = dialog.ShowModal()
 
         if result == wx.ID_YES:
-            with wx.TextEntryDialog(self, "Name for the new string:", "New String") as dialog:
+            with wx.TextEntryDialog(self, "Name for the new object:", "New Object") as dialog:
                 dialog: wx.TextEntryDialog
                 dialog.ShowModal()
                 name: str = dialog.GetValue()
 
-            with wx.TextEntryDialog(self, "Code for the new object", "New String") as dialog:
+            with ResizableTextEntryDialog(self, "Code for the new object", "New Object") as dialog:
                 dialog: wx.NumberEntryDialog
                 dialog.ShowModal()
                 code: str = dialog.GetValue()
 
-            with wx.TextEntryDialog(self, "Filename for the new object", "New String") as dialog:
+            with wx.TextEntryDialog(self, "Filename for the new object", "New Object") as dialog:
                 dialog: wx.NumberEntryDialog
                 dialog.ShowModal()
                 file: str = dialog.GetValue()
@@ -302,11 +353,11 @@ class MainFrame(wx.Frame):
             except Exception as e:
                 import traceback
 
-                with wx.MessageDialog(self, "Error", traceback.format_exception(e.__class__, e, e.__traceback__),
+                with wx.MessageDialog(self, str(e), f"Error: {e.__class__.__name__}",
                                       wx.OK | wx.CENTRE | wx.ICON_ERROR) as dialog:
                     dialog.ShowModal()
 
-            with wx.SingleChoiceDialog(self, "Choose an local object to create", "Boolean", loc.keys()) as dialog:
+            with wx.SingleChoiceDialog(self, "Choose an local object to create", "New Object", list(loc.keys())) as dialog:
                 dialog: wx.SingleChoiceDialog
                 dialog.ShowModal()
                 choosen = dialog.GetStringSelection()
@@ -317,7 +368,9 @@ class MainFrame(wx.Frame):
                     return
 
             selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
-            if selected_item == self.treeCtrl.GetRootItem():
+            if selected_item == self.rootItem:
+                path = []
+            elif selected_item is None:
                 path = []
             else:
                 path: list = self.treeCtrl.GetItemData(selected_item)["path"]
@@ -325,6 +378,10 @@ class MainFrame(wx.Frame):
         # evt.Destroy()
 
     def new_int(self, evt: wx.CommandEvent):
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
+        if not selected_item.IsOk():
+            return
+
         with wx.TextEntryDialog(self, "Name for the new integer:", "New Integer") as dialog:
             dialog: wx.TextEntryDialog
             dialog.ShowModal()
@@ -337,13 +394,19 @@ class MainFrame(wx.Frame):
             value: int = dialog.GetValue()
 
         selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
-        if selected_item == self.treeCtrl.GetRootItem():
+        if selected_item == self.rootItem:
             path = []
-        else:
+        elif selected_item.IsOk():
             path: list = self.treeCtrl.GetItemData(selected_item)["path"]
+        else:
+            return
         self.new_value(path, selected_item, name, value)
 
     def new_list_command(self, evt: wx.CommandEvent):
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
+        if not selected_item.IsOk():
+            return
+
         with wx.TextEntryDialog(self, "Name for the new list package:") as dialog:
             dialog: wx.TextEntryDialog
             dialog.ShowModal()
@@ -359,6 +422,10 @@ class MainFrame(wx.Frame):
         self.new_value(path, selected_item, name, value)
 
     def new_dict_command(self, evt: wx.CommandEvent):
+        selected_item: wx.TreeItemId = self.treeCtrl.GetSelection()
+        if not selected_item.IsOk():
+            return
+
         with wx.TextEntryDialog(self, "Name for the new dictionary package:") as dialog:
             dialog: wx.TextEntryDialog
             dialog.ShowModal()
@@ -401,24 +468,42 @@ class MainFrame(wx.Frame):
 
     def save_command(self, evt: wx.CommandEvent):
         if self.path:
-            nzt_file = NZTFile(self.path, "w")
-            nzt_file.data = self.data
-            nzt_file.save()
-            nzt_file.close()
-            return
+            try:
+                nzt_file = NZTFile(self.path, "w")
+                nzt_file.data = self.data
+                nzt_file.save()
+                nzt_file.close()
+                return
+            except PicklingError as e:
+                import traceback
+
+                with wx.MessageDialog(self, f"Error: {e.__class__.__name__}", str(e),
+                                      wx.OK | wx.CENTRE | wx.ICON_ERROR) as dialog:
+                    dialog.ShowModal()
+
         self.saveas_command(evt)
 
     def saveas_command(self, evt: wx.CommandEvent):
-        with wx.FileDialog(self, "Select NZT File", wildcard="NZT files (*.nzt)|*.nzt",
+        with wx.FileDialog(self, "Save NZT File", wildcard="NZT Files (*.nzt)|*.nzt",
                            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT) as fileDialog:
             fileDialog: wx.FileDialog
             fileDialog.ShowModal()
             path = fileDialog.GetPath()
 
-        nzt_file = NZTFile(path, "w")
-        nzt_file.data = self.data
-        nzt_file.save()
-        nzt_file.close()
+        if not path:
+            return
+
+        try:
+            nzt_file = NZTFile(path, "w")
+            nzt_file.data = self.data
+            nzt_file.save()
+            nzt_file.close()
+        except PicklingError as e:
+            import traceback
+
+            with wx.MessageDialog(self, str(e), f"Error: {e.__class__.__name__}",
+                                  wx.OK | wx.CENTRE | wx.ICON_ERROR) as dialog:
+                dialog.ShowModal()
 
         self.path = path
 
@@ -431,8 +516,6 @@ class MainFrame(wx.Frame):
         # menu_item = self.FindWindowById(menu_item_id)
         # print(menu_item)
 
-        self.new()
-
         with wx.FileDialog(self, "Select NZT File", wildcard="NZT files (*.nzt)|*.nzt",
                            style=wx.FD_DEFAULT_STYLE) as fileDialog:
             fileDialog: wx.FileDialog
@@ -440,6 +523,8 @@ class MainFrame(wx.Frame):
             path = fileDialog.GetPath()
 
         if path:
+            self.new()
+
             nzt_file = NZTFile(path, "r")
             nzt_file.load()
 
@@ -685,9 +770,10 @@ class MainFrame(wx.Frame):
 
     def open_item(self, evt: wx.TreeEvent):
         item: wx.TreeItemId = evt.GetItem()
-        path: list = self.treeCtrl.GetItemData(item)["path"]
-        # print(self.get_value(path, self.data))
-        self.change_value(path, item)
+        if item != self.rootItem:
+            path: list = self.treeCtrl.GetItemData(item)["path"]
+            # print(self.get_value(path, self.data))
+            self.change_value(path, item)
 
     def set_value(self, path, data, value_):
         if len(path) > 1:
